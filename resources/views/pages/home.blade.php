@@ -4,7 +4,7 @@
 
 @section('content')
   {{-- HERO --}}
-  <section class="hero" style="--hero:url('{{ asset('images/hero.jpg') }}')">
+  <section class="hero" style="--hero:url('{{ asset('images/images-header.png') }}')">
     <div class="hero-overlay"></div>
     <div class="gs-container hero-inner">
       <h1 class="hero-title">STANDAR EMAS RICE BOWL PEDAS!</h1>
@@ -56,19 +56,19 @@
       <div class="grid-3">
         {{-- atur level pedas: heat-1 | heat-2 | heat-3 --}}
         <article class="menu-card heat-3">
-          <img src="{{ asset('images/menu-sambal-bawang.jpg') }}" alt="Sambal Bawang" class="menu-img">
+          <img src="{{ asset('images/menu-sambal-bawang-foto.jpg') }}" alt="Sambal Bawang" class="menu-img">
           <h4 class="menu-name">SAMBAL BAWANG</h4>
           <p class="muted">Ayam krispi geprek dengan sambal bawang khas Golden Spice yang pedasnya nendang dan bikin nagih.</p>
         </article>
 
         <article class="menu-card heat-2">
-          <img src="{{ asset('images/menu-sambal-ijo.jpg') }}" alt="Sambal Ijo" class="menu-img">
+          <img src="{{ asset('images/menu-sambal-ijo-foto.jpg') }}" alt="Sambal Ijo" class="menu-img">
           <h4 class="menu-name">SAMBAL IJO</h4>
           <p class="muted">Ayam krispi disajikan dengan sambal ijo segar khas Nusantara — pedasnya pas, aromanya menggoda.</p>
         </article>
 
         <article class="menu-card heat-1">
-          <img src="{{ asset('images/menu-spicy-mayo.jpg') }}" alt="Spicy Mayo" class="menu-img">
+          <img src="{{ asset('images/menu-spicy-mayo-foto.jpg') }}" alt="Spicy Mayo" class="menu-img">
           <h4 class="menu-name">SPICY MAYO</h4>
           <p class="muted">Saus mentai ala Jepang yang creamy dan gurih di-torch untuk memberikan aroma smokey yang khas.</p>
         </article>
@@ -83,10 +83,10 @@
     </div>
   </section>
 
-  {{-- STORY --}}
+{{-- STORY --}}
   <section class="section">
     <div class="gs-container story-grid">
-      <img src="{{ asset('images/story.jpg') }}" alt="Golden Spice Cup" class="story-img">
+      <img src="{{ asset('images/story-foto.png') }}" alt="Golden Spice Cup" class="story-img">
       <div class="story-copy">
         {{-- >> merah + 45px --}}
         <h2 class="section-title red fs-45">STORY BEHIND IT...</h2>
