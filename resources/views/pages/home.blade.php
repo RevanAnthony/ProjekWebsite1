@@ -12,7 +12,10 @@
         Nikmati perpaduan sempurna nasi hangat, ayam krispi juicy, dan saus spesial
         yang dibuat khusus untuk para pencari sensasi pedas.
       </p>
-      <a href="#menu" class="gs-btn">Lihat Menu &amp; Pesan Sekarang</a>
+      <a href="{{ route('about') }}" class="gs-btn gs-btn--lg">
+  LIHAT MENU & PESAN SEKARANG
+</a>
+
     </div>
   </section>
 
@@ -72,7 +75,10 @@
       </div>
 
       <div class="center mt-24">
-        <a href="#!" class="link-arrow">LIHAT MENU &gt;&gt;&gt;</a>
+        <a href="{{ route('about') }}" class="link-arrow">
+  LIHAT MENU >>>
+</a>
+
       </div>
     </div>
   </section>

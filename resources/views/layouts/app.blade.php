@@ -7,6 +7,11 @@
 
   {{-- Google Fonts --}}
   <link href="https://fonts.googleapis.com/css2?family=Koulen&family=Questrial&family=Hind:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap">
+<style>
+  .material-symbols-rounded{font-variation-settings:'FILL' 1,'wght' 600,'GRAD' 0,'opsz' 24}
+</style>
+
 
   {{-- CSS utama --}}
   <link rel="stylesheet" href="{{ asset('css/golden.css') }}?v={{ filemtime(public_path('css/golden.css')) }}">
