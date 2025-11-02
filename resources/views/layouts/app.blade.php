@@ -5,77 +5,128 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>@yield('title','Golden Spice')</title>
 
-  {{-- Google Fonts --}}
-  <link href="https://fonts.googleapis.com/css2?family=Koulen&family=Questrial&family=Hind:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Fonts & Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Koulen&family=Questrial&family=Hind:wght@700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:wght@400;600&display=swap">
-<style>
-  .material-symbols-rounded{font-variation-settings:'FILL' 1,'wght' 600,'GRAD' 0,'opsz' 24}
-</style>
 
-
-  {{-- CSS utama --}}
+  <!-- CSS utama (cache-buster) -->
   <link rel="stylesheet" href="{{ asset('css/golden.css') }}?v={{ filemtime(public_path('css/golden.css')) }}">
   @stack('styles')
 </head>
 <body>
-  {{-- Topbar / Navbar --}}
+
+  <!-- HEADER -->
   <header class="gs-header">
-    <div class="gs-container">
-      <a class="brand" href="{{ route('home') }}">GOLDEN SPICE</a>
-      <nav class="nav">
-        <a href="{{ route('home') }}"  class="{{ request()->routeIs('home') ? 'active' : '' }}">Beranda</a>
-        <a href="{{ route('about') }}" class="{{ request()->routeIs('about') ? 'active' : '' }}">Menu</a>
-        <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'active' : '' }}">Contact</a>
-      </nav>
+    <div class="gs-container hdr">
+      <!-- Brand kiri -->
+      <a class="brand" href="{{ auth()->check() ? route('home') : route('login') }}">GOLDEN SPICE</a>
+
+      <!-- Nav (tampil hanya saat login) -->
+      @auth
+        <nav class="nav" id="mainNav">
+          <a href="{{ route('home')    }}" class="{{ request()->routeIs('home')    ? 'active' : '' }}">Beranda</a>
+          <a href="{{ route('menu')    }}" class="{{ request()->routeIs('menu')    ? 'active' : '' }}">Menu</a>
+          <a href="{{ route('contact') }}" class="{{ request()->routeIs('contact') ? 'active' : '' }}">Contact</a>
+          <!-- nav-pill disisipkan via JS -->
+        </nav>
+      @endauth
+
+      <!-- Kanan: user / auth -->
+      <div class="nav-right">
+        @guest
+          <a href="{{ route('login')    }}" class="btn-link  {{ request()->routeIs('login')    ? 'active' : '' }}">Login</a>
+          <a href="{{ route('register') }}" class="btn-pill  {{ request()->routeIs('register') ? 'active' : '' }}">Daftar</a>
+        @endguest
+
+        @auth
+          <div class="user">
+            <button type="button" class="user-btn" id="userBtn">
+              <span class="material-symbols-rounded">account_circle</span>
+              <span>{{ Str::of(auth()->user()->nama ?? auth()->user()->email)->limit(18) }}</span>
+              <span class="material-symbols-rounded chevron">expand_more</span>
+            </button>
+
+            <div class="user-menu" id="userMenu" aria-hidden="true">
+              <div class="user-meta">
+                <div class="avatar">{{ strtoupper(mb_substr(auth()->user()->nama ?? 'U',0,1)) }}</div>
+                <div>
+                  <div><strong>{{ auth()->user()->nama ?? 'User' }}</strong></div>
+                  <div class="small">{{ auth()->user()->email }}</div>
+                </div>
+              </div>
+              <form id="logoutForm" method="POST" action="{{ route('logout') }}">
+                @csrf
+                <button class="logout" type="submit">
+                  <span class="material-symbols-rounded">logout</span> Keluar
+                </button>
+              </form>
+            </div>
+          </div>
+        @endauth
+      </div>
     </div>
   </header>
 
-  {{-- Konten halaman --}}
+  {{-- Overlay gelap --}}
+<div class="cart-overlay"></div>
+
+{{-- Drawer kanan --}}
+<aside class="cart-drawer" id="cartDrawer">
+  <div class="cart-head">
+    <div>
+      <div class="cart-brand">GOLDEN SPICE</div>
+      <div class="cart-sub">Your Order (<span id="cartCount">0</span>)</div>
+    </div>
+    <button type="button" class="cart-close" aria-label="Tutup" data-cart-close>
+      ✕
+    </button>
+  </div>
+
+  <div class="cart-body">
+    <div class="cart-list" id="cartItems">
+      {{-- Contoh 1 item (silakan render dinamis) --}}
+      {{-- 
+      <div class="cart-item">
+        <img class="cart-thumb" src="{{ asset('img/sample.jpg') }}" alt="">
+        <div>
+          <div class="cart-name">Nasi Ayam Sambal Bawang</div>
+          <div class="cart-qtyrow">
+            <button class="qty-btn" data-dec>-</button>
+            <span class="qty-val">1</span>
+            <button class="qty-btn" data-inc>+</button>
+          </div>
+        </div>
+        <div class="cart-price">Rp 25.000</div>
+      </div>
+      --}}
+    </div>
+  </div>
+
+  <div class="cart-foot">
+    <div class="cart-total">
+      <span>Total Price</span>
+      <span id="cartTotal">Rp 0</span>
+    </div>
+    <button class="cart-cta" type="button">Review Order</button>
+  </div>
+</aside>
+
+
+  <!-- KONTEN -->
   <main>
     @yield('content')
   </main>
 
-  {{-- Footer --}}
+  <!-- FOOTER -->
   <footer class="gs-footer">
-    <div class="gs-container footer-grid">
-      <div>
-        <h3 class="footer-title">GOLDEN SPICE</h3>
-        <p class="muted">Address: jl.</p>
-        <p class="muted">Operating hours<br>Weekday: 00.00 - 00.00<br>Weekend: 00.00 - 00.00</p>
-        <p class="muted">Telephone: 0811</p>
-        <p class="muted">E-mail: <a href="mailto:goldspice@gmail.com">goldspice@gmail.com</a></p>
-      </div>
-      <div>
-        <h3 class="footer-title">SERVICES</h3>
-        <ul class="footer-list">
-          <li>Dine-in</li>
-          <li>Delivery</li>
-          <li>Take Away</li>
-          <li>Catering</li>
-        </ul>
-      </div>
-      <div>
-        <h3 class="footer-title">INFO</h3>
-        <ul class="footer-list">
-          <li><a href="{{ route('contact') }}">Contact Us</a></li>
-          <li><a href="{{ route('about') }}">Menu</a></li>
-          <li><a href="#">FAQ</a></li>
-        </ul>
-      </div>
-    </div>
     <div class="gs-container footer-bottom">
-      <div class="socials">
-        <span class="dot" aria-hidden="true"></span>
-        <span class="dot" aria-hidden="true"></span>
-        <span class="dot" aria-hidden="true"></span>
-        <span class="dot" aria-hidden="true"></span>
-      </div>
-      <p class="muted">© 2025 9old3n Spice. All Rights Reserved.</p>
+      <p class="muted">© {{ date('Y') }} 9old3n Spice. All Rights Reserved.</p>
+      <div class="socials"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
     </div>
   </footer>
 
-  {{-- JS interaksi/hover --}}
-  <script defer src="{{ asset('js/golden.js') }}?v={{ filemtime(public_path('js/golden.js')) }}"></script>
+  <!-- JS (nav-pill, ripple, reveal, & user menu) -->
+  <script src="{{ asset('js/golden.js') }}?v={{ filemtime(public_path('js/golden.js')) }}"></script>
   @stack('scripts')
 </body>
 </html>
