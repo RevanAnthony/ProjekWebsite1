@@ -12,27 +12,53 @@ use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
-    /** ---------------- Login ---------------- */
-    public function showLogin()
+    /* ================= Helper Captcha ================= */
+    private function makeCaptcha(Request $request, string $key): array
     {
-        return view('auth.login');
+        $a = random_int(1, 9);
+        $b = random_int(1, 9);
+        $request->session()->put($key, $a + $b); // simpan hasil ke session
+        return [$a, $b]; // kirim angka ke view
     }
 
+    /* ================= LOGIN ================= */
+    // GET: tampilkan form + generate captcha
+    public function showLogin(Request $request)
+    {
+        [$c1, $c2] = $this->makeCaptcha($request, 'captcha.login');
+        return view('auth.login', compact('c1', 'c2'));
+    }
+
+    // POST: proses login + validasi captcha
     public function attempt(Request $request)
     {
         $data = $request->validate([
             'email'    => ['required','email'],
             'password' => ['required','string','min:6'],
             'remember' => ['nullable'],
+            'captcha'  => ['required','integer'],
         ]);
 
-        if (Auth::attempt(
-            ['email' => $data['email'], 'password' => $data['password']],
-            $request->boolean('remember')
-        )) {
+        // cek captcha (sekali pakai)
+        $expected = (int) $request->session()->pull('captcha.login', 0); // pull = hapus setelah dibaca
+        if ((int)$data['captcha'] !== $expected) {
+            // siapkan captcha baru untuk tampilan berikutnya
+            $this->makeCaptcha($request, 'captcha.login');
+
+            return back()
+                ->withErrors(['captcha' => 'Jawaban verifikasi salah, silakan coba lagi.'])
+                ->withInput($request->except('password'));
+        }
+
+        $remember = $request->boolean('remember');
+
+        if (Auth::attempt(['email' => $data['email'], 'password' => $data['password']], $remember)) {
             $request->session()->regenerate();
             return redirect()->intended(route('home'));
         }
+
+        // kredensial salah → buat captcha baru lagi
+        $this->makeCaptcha($request, 'captcha.login');
 
         throw ValidationException::withMessages([
             'email' => 'Email atau password salah.',
@@ -44,23 +70,35 @@ class AuthController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        // Arahkan ke login agar jelas
         return redirect()->route('login');
     }
 
-    /** ---------------- Register ---------------- */
-    public function showRegister()
+    /* ================= REGISTER ================= */
+    // GET: tampilkan form + generate captcha
+    public function showRegister(Request $request)
     {
-        return view('auth.register');
+        [$c1, $c2] = $this->makeCaptcha($request, 'captcha.register');
+        return view('auth.register', compact('c1', 'c2'));
     }
 
+    // POST: proses register + validasi captcha
     public function register(Request $request)
     {
         $data = $request->validate([
-            'nama'                  => ['required','string','max:100'],
-            'email'                 => ['required','email','max:190','unique:pengguna,email'],
-            'password'              => ['required','string','min:6','confirmed'],
+            'nama'     => ['required','string','max:100'],
+            'email'    => ['required','email','max:190','unique:pengguna,email'],
+            'password' => ['required','string','min:6','confirmed'],
+            'captcha'  => ['required','integer'],
         ]);
+
+        $expected = (int) $request->session()->pull('captcha.register', 0);
+        if ((int)$data['captcha'] !== $expected) {
+            $this->makeCaptcha($request, 'captcha.register');
+
+            return back()
+                ->withErrors(['captcha' => 'Jawaban verifikasi salah, silakan coba lagi.'])
+                ->withInput($request->except('password'));
+        }
 
         $user = User::create([
             'nama'     => $data['nama'],
@@ -74,7 +112,7 @@ class AuthController extends Controller
         return redirect()->intended(route('home'));
     }
 
-    /** ---------------- Google OAuth ---------------- */
+    /* ================= Google OAuth ================= */
     public function googleRedirect()
     {
         return Socialite::driver('google')->redirect();
@@ -94,11 +132,9 @@ class AuthController extends Controller
                 'google_id' => $gUser->getId(),
                 'password'  => Hash::make(Str::random(16)),
             ]);
-        } else {
-            if (empty($user->google_id)) {
-                $user->google_id = $gUser->getId();
-                $user->save();
-            }
+        } elseif (empty($user->google_id)) {
+            $user->google_id = $gUser->getId();
+            $user->save();
         }
 
         Auth::login($user, true);

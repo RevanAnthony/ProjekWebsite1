@@ -72,6 +72,21 @@
       .auth-card{ grid-template-columns:1fr }
       .auth-media{ display:none }
     }
+
+    /* == Password eye (di dalam input) == */
+    .gs-input { position: relative; }
+    .gs-with-eye { padding-right: 44px !important; }
+    .gs-eye-btn{
+      position:absolute;
+      right:12px; top:50%; transform:translateY(-50%);
+      width:32px; height:32px; display:grid; place-items:center;
+      border:0; background:transparent; cursor:pointer; line-height:0;
+      z-index:3; color:#9a9a9a; opacity:.9;
+    }
+    .gs-eye-btn:hover{ color:#555; opacity:1; }
+    .gs-eye-off{ display:none; }
+    .gs-eye-btn[aria-pressed="true"] .gs-eye{ display:none; }
+    .gs-eye-btn[aria-pressed="true"] .gs-eye-off{ display:inline; }
   </style>
 @endpush
 
@@ -81,7 +96,8 @@
     <div class="auth-card">
       {{-- LEFT: image --}}
       <div class="auth-media">
-        <img src="{{ asset('images/login-bowl.jpg') }}" alt="Golden Spice Rice Bowl">
+        <img src="{{ asset('images/login-register.png') }}" alt="Golden Spice"
+             loading="lazy" style="display:block;width:100%;height:100%;object-fit:cover">
       </div>
 
       {{-- RIGHT: form --}}
@@ -112,14 +128,53 @@
 
           <div class="field">
             <label class="label" for="password">Password</label>
-            <input class="input" id="password" type="password" name="password" placeholder="••••••••" required>
+            <div class="gs-input">
+              <input class="input gs-with-eye" id="password" type="password" name="password" placeholder="••••••••" required>
+              <button
+                type="button"
+                class="gs-eye-btn"
+                data-password-toggle="#password"
+                aria-label="Show password"
+                aria-pressed="false"
+              >
+                <span class="material-icons-outlined gs-eye">visibility</span>
+                <span class="material-icons-outlined gs-eye-off">visibility_off</span>
+              </button>
+            </div>
           </div>
 
           <div class="row-mini">
             <label class="remember">
-              <input type="checkbox" name="remember" value="1"> Remember my information
+              <input type="checkbox" name="remember" value="1" {{ old('remember') ? 'checked' : '' }}> Remember my information
             </label>
             <a class="forgot" href="{{ route('password.request', [], false) }}">Forgot Password?</a>
+          </div>
+
+          {{-- Captcha: pakai style lama dari golden.css --}}
+          <div class="field">
+            <label class="label">Verifikasi</label>
+            <div class="captcha-wrap">
+              <div class="captcha-box" id="captcha-login" aria-label="Captcha">
+                <span class="captcha-pepper">🌶</span>
+                <span class="captcha-num">{{ $c1 ?? 0 }}</span>
+                <span class="captcha-op">+</span>
+                <span class="captcha-num">{{ $c2 ?? 0 }}</span>
+                <span class="captcha-op">=</span>
+                <span class="captcha-q">?</span>
+              </div>
+
+              <input class="input captcha-input" type="number" inputmode="numeric"
+                     name="captcha" placeholder="Jawaban" required
+                     value="{{ old('captcha') }}" autocomplete="off">
+
+              <a href="{{ url()->current() }}#captcha-login" class="captcha-refresh" aria-label="Ganti soal">
+                <span class="material-icons-outlined">refresh</span>
+              </a>
+            </div>
+
+            @error('captcha')
+              <div class="errors" style="margin-top:8px">{{ $message }}</div>
+            @enderror
           </div>
 
           <button type="submit" class="btn-submit">Login</button>
@@ -128,11 +183,17 @@
 
           <div class="oauths">
             {{-- Google: selalu tampil --}}
-            <a class="btn-oauth" href="{{ route('auth.google.redirect') }}">
-              <span class="material-icons-outlined">google</span> Login with Google
+            <a class="btn-oauth btn-google" href="{{ route('auth.google.redirect') }}">
+              <svg class="g-icon" viewBox="0 0 533.5 544.3" width="18" height="18" role="img" aria-hidden="true">
+                <path fill="#4285F4" d="M533.5 278.4c0-18.5-1.6-36.3-4.7-53.6H272v101.5h146.9c-6.3 34-25 62.9-53.3 82.2v68h86.1c50.3-46.4 81.8-114.8 81.8-198.1z"/>
+                <path fill="#34A853" d="M272 544.3c72.3 0 132.9-23.9 177.2-64.8l-86.1-68c-23.9 16-54.4 25.5-91.1 25.5-69.9 0-129.2-47.2-150.4-110.5H33.6v69.7C77.7 488.7 168.2 544.3 272 544.3z"/>
+                <path fill="#FBBC04" d="M121.6 326.5c-10-29.9-10-62.1 0-92l.1-.4V164.4H33.6c-33.8 67.6-33.8 148.2 0 215.8l88-53.7z"/>
+                <path fill="#EA4335" d="M272 107.7c39.3-.6 77.1 13.8 106.2 40.7l79.3-79.3C402.7 24 340.7 0 272 0 168.2 0 77.7 55.6 33.6 139l88 69.6C142.7 154.9 202 107.7 272 107.7z"/>
+              </svg>
+              <span class="btn-text">Login with Google</span>
             </a>
 
-            {{-- Facebook: hanya tampil jika rute ada (agar tidak error ketika belum diset) --}}
+            {{-- Facebook: hanya tampil jika rute ada --}}
             @if (Route::has('auth.facebook.redirect'))
               <a class="btn-oauth" href="{{ route('auth.facebook.redirect') }}">
                 <span class="material-icons-outlined">facebook</span> Login with Facebook

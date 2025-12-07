@@ -15,7 +15,12 @@ class User extends Authenticatable
     public $timestamps = true;
 
     protected $fillable = [
-        'nama', 'email', 'password', 'nomor_telepon', 'google_id',
+        'nama',
+        'email',
+        'password',
+        'nomor_telepon',
+        'google_id',
+        'role',           // <--- tambahkan ini
     ];
 
     protected $hidden = ['password', 'remember_token'];
@@ -24,7 +29,13 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'password'          => 'hashed',
         ];
+    }
+
+    // Helper
+    public function isOwner(): bool
+    {
+        return $this->role === 'owner';
     }
 }

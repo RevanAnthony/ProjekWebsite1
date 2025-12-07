@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Models\Produk;
+use App\Models\KategoriProduk;
+use App\Models\Pesanan;
 
 class PageController extends Controller
 {
@@ -12,10 +15,10 @@ class PageController extends Controller
         return view('pages.home');
     }
 
-    // ====== Halaman Tentang Kami (About) ======
+    // ====== About -> arahkan ke Menu (sesuai penggunaanmu di beranda)
     public function about()
     {
-        return view('pages.menu');
+        return redirect()->route('menu');
     }
 
     // ====== Halaman Kontak (GET) ======
@@ -27,17 +30,35 @@ class PageController extends Controller
     // ====== Proses form Kontak (POST) ======
     public function sendContact(Request $request)
     {
-        // TODO: validasi & simpan/kirim email jika diperlukan
-        return redirect()->route('contact')->with('success', 'Pesan Anda telah terkirim!');
+        // TODO: validasi & proses kirim/simpan jika diperlukan
+        return redirect()
+            ->route('contact')
+            ->with('success', 'Pesan Anda telah terkirim!');
     }
 
-    // ====== Halaman Menu ======
+    // ====== Halaman Menu (ambil dari DB) ======
     public function menu()
     {
-        $items = $this->menuItems();
+        // Ambil semua produk dari database
+        $produk = Produk::orderBy('id_produk')->get();
 
-        // render ke view menu (BUKAN pages.about)
-        return view('pages.menu', compact('items'));
+        // Kirim ke view pages/menu.blade.php
+        return view('pages.menu', compact('produk'));
+    }
+
+    /**
+     * Halaman chat user untuk 1 pesanan tertentu.
+     * Dibuka dari tombol chat di halaman order-status.
+     */
+    public function userChat($orderId)
+    {
+        // Ambil pesanan + relasi pelanggan
+        $order = Pesanan::with('pengguna')->findOrFail($orderId);
+
+        return view('pages.user-chat', [
+            'order' => $order,
+            'user'  => $order->pengguna,   // bisa null kalau belum di-link
+        ]);
     }
 
     /**
@@ -161,5 +182,58 @@ class PageController extends Controller
                 'price' => 10000, 'cat' => 'drinks', 'heat' => 0, 'slug' => 'black-ant-tea',
             ],
         ];
+    }
+
+    /**
+     * Seed produk berdasarkan menuItems() ke tabel produk + kategori.
+     * (Hanya dipakai sekali/kalau perlu sync data.)
+     */
+    public function seedProductsFromMenuItems()
+    {
+        // 1) Pastikan kategori ada dulu, dan ambil ID-nya dari database
+        $kategoriSumber = [
+            'bowls'  => 'Rice Bowls',
+            'sides'  => 'Side Dishes',
+            'drinks' => 'Drinks',
+        ];
+
+        $kategoriMap = [];
+
+        foreach ($kategoriSumber as $slug => $nama) {
+            $kategori = KategoriProduk::updateOrCreate(
+                ['slug' => $slug],            // cari berdasarkan slug
+                ['nama_kategori' => $nama]    // kalau belum ada, buat
+            );
+
+            $kategoriMap[$slug] = $kategori->id_kategori;
+        }
+
+        // 2) Seed produk dengan id_kategori yang benar (dari $kategoriMap)
+        $rows  = $this->menuItems();
+        $count = 0;
+
+        // default kalau entah kenapa cat-nya tidak dikenal
+        $defaultKategoriId = $kategoriMap['bowls'] ?? reset($kategoriMap);
+
+        foreach ($rows as $r) {
+            $slugKategori = $r['cat']; // 'bowls' / 'sides' / 'drinks'
+            $idKategori   = $kategoriMap[$slugKategori] ?? $defaultKategoriId;
+
+            Produk::updateOrCreate(
+                ['slug' => $r['slug']], // unik per produk
+                [
+                    'id_kategori' => $idKategori,
+                    'nama_produk' => $r['name'],
+                    'level_pedas' => $r['heat'] ?? 0,
+                    'harga'       => $r['price'],
+                    'stok'        => 999,
+                    'deskripsi'   => $r['desc'],
+                    'url_gambar'  => $r['img'], // mis. images/red-tea-foto.jpg
+                ]
+            );
+            $count++;
+        }
+
+        return response("Seeded/updated $count produk.", 200);
     }
 }

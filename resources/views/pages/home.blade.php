@@ -12,10 +12,9 @@
         Nikmati perpaduan sempurna nasi hangat, ayam krispi juicy, dan saus spesial
         yang dibuat khusus untuk para pencari sensasi pedas.
       </p>
-      <a href="{{ route('about') }}" class="gs-btn gs-btn--lg">
-  LIHAT MENU & PESAN SEKARANG
-</a>
-
+      <a href="{{ route('menu') }}" class="gs-btn gs-btn--lg">
+        LIHAT MENU & PESAN SEKARANG
+      </a>
     </div>
   </section>
 
@@ -75,15 +74,14 @@
       </div>
 
       <div class="center mt-24">
-        <a href="{{ route('about') }}" class="link-arrow">
-  LIHAT MENU >>>
-</a>
-
+        <a href="{{ route('menu') }}" class="link-arrow">
+          LIHAT MENU >>>
+        </a>
       </div>
     </div>
   </section>
 
-{{-- STORY --}}
+  {{-- STORY --}}
   <section class="section">
     <div class="gs-container story-grid">
       <img src="{{ asset('images/story-foto.png') }}" alt="Golden Spice Cup" class="story-img">

@@ -36,11 +36,23 @@ return [
     */
 
     'guards' => [
-        'web' => [
-            'driver' => 'session',
+    'web' => [
+        'driver' => 'session',
+        'provider' => 'users',
+    ],
+
+    'admin' => [              // ← TAMBAHAN BARU DI SINI
+        'driver'  => 'session',
+        'provider'=> 'users',
+    ],
+
+      // Owner panel
+        'owner' => [
+            'driver'   => 'session',
             'provider' => 'users',
         ],
-    ],
+],
+
 
     /*
     |--------------------------------------------------------------------------
