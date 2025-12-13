@@ -23,6 +23,24 @@
 @endphp
 
 @push('styles')
+
+<style>
+    .am-code{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+        align-items:flex-start;
+    }
+    .am-code-main{
+        font-size:13px;
+        font-weight:700;
+    }
+    .am-code-id{
+        font-size:11px;
+        color:#999;
+    }
+</style>
+
 <style>
   .gs-menu-page{
     padding-bottom:40px;
@@ -652,7 +670,8 @@
         <hr class="gs-divider">
 
         <div class="gs-info-row">
-          <span>ID Produk</span>
+          <span>Kode / ID
+</span>
           <span id="gsDrawerKode">#R001</span>
         </div>
         <div class="gs-info-row">

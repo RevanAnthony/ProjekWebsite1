@@ -12,10 +12,8 @@ class VerifyCsrfToken extends Middleware
      * @var array<int, string>
      */
     protected $except = [
-        // EXCLUDE semua route owner panel (dev only)
+        // DEV ONLY: EXCLUDE semua route owner & kasir panel
         'gs-owner-panel-x01/*',
-
-        // kalau mau exclude sesuatu yang lain, tambahin di bawah ini
-        // 'gs-kasir-panel-x01/*',
+        'gs-kasir-panel-x01/*',
     ];
 }

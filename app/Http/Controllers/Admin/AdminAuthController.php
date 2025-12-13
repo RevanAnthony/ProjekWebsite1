@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User; // pakai model User yang tabelnya `pengguna`
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -13,34 +13,60 @@ use Illuminate\Validation\ValidationException;
 class AdminAuthController extends Controller
 {
     /* ================= Helper Captcha (admin) ================= */
-    private function makeCaptcha(Request $request, string $key): array
+
+    private function makeCaptcha(Request $request, string $key = 'captcha.admin.login'): array
     {
-        $a = random_int(1, 9);
-        $b = random_int(1, 9);
+        $captcha = $request->session()->get($key);
 
-        $request->session()->put($key, $a + $b);
+        if (! $captcha) {
+            $a = random_int(1, 9);
+            $b = random_int(1, 9);
 
-        return [
-            'text'   => "Berapa hasil $a + $b ?",
-            'a'      => $a,
-            'b'      => $b,
-            'result' => $a + $b,
-        ];
+            $captcha = [
+                'a'        => $a,
+                'b'        => $b,
+                'question' => "{$a} + {$b} = ?",
+                'answer'   => $a + $b,
+            ];
+
+            $request->session()->put($key, $captcha);
+        }
+
+        return $captcha;
     }
 
-    /* ================== LOGIN ================== */
+    private function validateCaptcha(Request $request, string $key = 'captcha.admin.login'): void
+    {
+        $captcha = $request->session()->get($key);
+
+        if (! $captcha) {
+            throw ValidationException::withMessages([
+                'captcha' => 'Captcha tidak ditemukan, silakan muat ulang halaman.',
+            ]);
+        }
+
+        if ((int) $request->input('captcha') !== (int) $captcha['answer']) {
+            throw ValidationException::withMessages([
+                'captcha' => 'Jawaban verifikasi tidak sesuai.',
+            ]);
+        }
+
+        // kalau lolos, hapus supaya tidak bisa dipakai ulang
+        $request->session()->forget($key);
+    }
+
+    /* ================= Login admin (kasir) ================= */
+
     public function showLogin(Request $request)
-{
-    // Kalau sudah login sebagai admin kasir, jangan buka halaman login lagi
-    if (Auth::check() && (Auth::user()->role ?? null) === 'admin') {
-        return redirect()->route('admin.orders.index');
+    {
+        if (Auth::guard('admin')->check()) {
+            return redirect()->route('admin.orders.index');
+        }
+
+        $captcha = $this->makeCaptcha($request);
+
+        return view('admin.auth.login', compact('captcha'));
     }
-
-    $captcha = $this->makeCaptcha($request, 'captcha.admin.login');
-
-    return view('admin.auth.login', compact('captcha'));
-}
-
 
     public function attempt(Request $request)
     {
@@ -50,29 +76,17 @@ class AdminAuthController extends Controller
             'captcha'  => ['required', 'numeric'],
         ]);
 
-        // cek captcha
-        $expected = (int) $request->session()->pull('captcha.admin.login', 0);
-        if ((int) $data['captcha'] !== $expected) {
-            $this->makeCaptcha($request, 'captcha.admin.login');
+        // Validasi captcha
+        $this->validateCaptcha($request);
 
-            return back()
-                ->withErrors(['captcha' => 'Jawaban verifikasi salah, silakan coba lagi.'])
-                ->withInput($request->except('password'));
-        }
+        // Cari user admin
+        $user = User::where('email', $data['email'])
+            ->where('role', 'admin')
+            ->first();
 
-        // cari user di tabel `pengguna`
-        $user = User::where('email', $data['email'])->first();
-
-        // izinkan hanya role 'admin' (admin kasir)
-        if (
-            !$user ||
-            $user->role !== 'admin' ||
-            !Hash::check($data['password'], $user->password)
-        ) {
-            $this->makeCaptcha($request, 'captcha.admin.login');
-
+        if (! $user || ! Hash::check($data['password'], $user->password)) {
             throw ValidationException::withMessages([
-                'email' => 'Email/password salah atau akun bukan admin kasir.',
+                'email' => 'Kredensial admin tidak valid.',
             ]);
         }
 
@@ -82,32 +96,26 @@ class AdminAuthController extends Controller
         Auth::guard('admin')->login($user, $remember);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('admin.orders.index'));
+        return redirect()->route('admin.orders.index');
     }
 
-    /* ================== LOGOUT ================== */
     public function logout(Request $request)
     {
-        // LOGOUT PAKAI GUARD ADMIN
         Auth::guard('admin')->logout();
 
-        $request->session()->invalidate();
+        // Jangan invalidate semua session supaya user/owner tidak ikut logout.
+        // $request->session()->invalidate();
+
         $request->session()->regenerateToken();
 
         return redirect()->route('admin.login');
     }
 
-    /* ================== REGISTER ADMIN KASIR ================== */
-    public function showRegister(Request $request)
+    /* ================= Optional: register admin ================= */
+
+    public function showRegister()
     {
-        // kalau sudah login admin, nggak perlu daftar lagi
-        if (Auth::guard('admin')->check()) {
-            return redirect()->route('admin.orders.index');
-        }
-
-        $captcha = $this->makeCaptcha($request, 'captcha.admin.register');
-
-        return view('admin.auth.register', compact('captcha'));
+        return view('admin.auth.register');
     }
 
     public function register(Request $request)
@@ -120,20 +128,8 @@ class AdminAuthController extends Controller
                 'confirmed',
                 Password::min(8)->mixedCase()->numbers()->symbols(),
             ],
-            'captcha'  => ['required', 'numeric'],
         ]);
 
-        // cek captcha
-        $expected = (int) $request->session()->pull('captcha.admin.register', 0);
-        if ((int) $data['captcha'] !== $expected) {
-            $this->makeCaptcha($request, 'captcha.admin.register');
-
-            return back()
-                ->withErrors(['captcha' => 'Jawaban verifikasi salah, silakan coba lagi.'])
-                ->withInput($request->except('password'));
-        }
-
-        // buat user dengan role 'admin'
         $user = User::create([
             'nama'     => $data['nama'],
             'email'    => $data['email'],
@@ -141,7 +137,6 @@ class AdminAuthController extends Controller
             'role'     => 'admin',
         ]);
 
-        // LOGIN PAKAI GUARD ADMIN
         Auth::guard('admin')->login($user);
         $request->session()->regenerate();
 

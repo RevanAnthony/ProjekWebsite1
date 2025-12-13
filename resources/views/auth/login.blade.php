@@ -167,10 +167,12 @@
                      name="captcha" placeholder="Jawaban" required
                      value="{{ old('captcha') }}" autocomplete="off">
 
-              <a href="{{ url()->current() }}#captcha-login" class="captcha-refresh" aria-label="Ganti soal">
-                <span class="material-icons-outlined">refresh</span>
-              </a>
-            </div>
+                      <button type="button"
+                class="captcha-refresh"
+                onclick="window.location.reload()">
+          <span class="material-symbols-rounded">refresh</span>
+        </button>
+      </div>
 
             @error('captcha')
               <div class="errors" style="margin-top:8px">{{ $message }}</div>

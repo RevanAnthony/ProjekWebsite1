@@ -108,35 +108,26 @@ Route::middleware('auth:web')->group(function () {
     Route::post('/orders/{id}/chat', [ChatController::class, 'sendOrderMessage'])->name('orders.chat.send');
 });
 
-/*
-|--------------------------------------------------------------------------
-| ADMIN / KASIR PANEL - GUARD: admin
-|--------------------------------------------------------------------------
-*/
-
+// ===================== ADMIN / KASIR PANEL =====================
 Route::prefix('gs-kasir-panel-x01')
     ->name('admin.')
     ->group(function () {
 
-        // Admin guest (belum login sebagai admin/kasir)
-        Route::middleware('guest:admin')->group(function () {
-            Route::get('/login',  [AdminAuthController::class, 'showLogin'])->name('login');
-            Route::post('/login', [AdminAuthController::class, 'attempt'])->name('login.attempt');
-            // Tidak ada register admin (buat manual)
-        });
+        // LOGIN ADMIN (tidak pakai guest web)
+        Route::get('/login',  [AdminAuthController::class, 'showLogin'])->name('login');
+        Route::post('/login', [AdminAuthController::class, 'attempt'])->name('login.attempt');
 
-        // Admin / kasir yang sudah login
-        Route::middleware('auth:admin')->group(function () {
-
+        // AREA ADMIN TERPROTEKSI
+        Route::middleware(['auth:admin', \App\Http\Middleware\AdminOnly::class])->group(function () {
             Route::post('/logout', [AdminAuthController::class, 'logout'])->name('logout');
 
             // MENU KASIR
             Route::get('/menu', [AdminMenuController::class, 'index'])->name('menu.index');
 
             // PESANAN (kasir)
-            Route::get('/orders',                [AdminOrderController::class, 'index'])->name('orders.index');
-            Route::get('/orders/{order}',        [AdminOrderController::class, 'show'])->name('orders.show');
-            Route::post('/orders/{order}/status',[AdminOrderController::class, 'updateStatus'])
+            Route::get('/orders',                 [AdminOrderController::class, 'index'])->name('orders.index');
+            Route::get('/orders/{order}',         [AdminOrderController::class, 'show'])->name('orders.show');
+            Route::post('/orders/{order}/status', [AdminOrderController::class, 'updateStatus'])
                 ->name('orders.update-status');
 
             // CHAT (admin / kasir)
@@ -144,40 +135,38 @@ Route::prefix('gs-kasir-panel-x01')
             Route::get('/chats/{chat}',       [AdminChatController::class, 'show'])->name('chats.show');
             Route::post('/chats/{chat}/send', [AdminChatController::class, 'sendMessage'])->name('chats.send');
 
-            // Buka chat dari kartu pesanan
+            // Chat dari kartu pesanan
             Route::get('/orders/{order}/chat', [AdminChatController::class, 'orderChat'])->name('orders.chat');
         });
     });
 
-/*
-|--------------------------------------------------------------------------
-| OWNER PANEL - GUARD: owner
-|--------------------------------------------------------------------------
-*/
+// ===================== OWNER PANEL =====================
 Route::prefix('gs-owner-panel-x01')
     ->name('owner.')
     ->group(function () {
 
-        Route::middleware('guest:owner')->group(function () {
-            Route::get('/login',  [OwnerAuthController::class, 'showLoginForm'])->name('login');
-            Route::post('/login', [OwnerAuthController::class, 'login'])->name('login.submit');
-        });
+        // LOGIN OWNER (tidak pakai guest web)
+        Route::get('/login',  [OwnerAuthController::class, 'showLoginForm'])->name('login');
+        Route::post('/login', [OwnerAuthController::class, 'login'])->name('login.submit');
 
-        Route::middleware('auth:owner')->group(function () {
+        // AREA OWNER TERPROTEKSI
+        Route::middleware(['auth:owner', 'owner'])->group(function () {
             Route::post('/logout', [OwnerAuthController::class, 'logout'])->name('logout');
 
-            Route::get('/', [OwnerDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/',          [OwnerDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard.alt');
 
-            // ⬇⬇⬇ INI YANG PENTING
-            Route::get('/menu', [OwnerMenuController::class, 'index'])->name('menu.index');
-            // ⬆⬆⬆
-            Route::get('/menu/{produk}/edit', [OwnerMenuController::class, 'edit'])->name('menu.edit');
-            Route::put('/menu/{produk}',      [OwnerMenuController::class, 'update'])->name('menu.update');
-            Route::delete('/menu/{produk}',   [OwnerMenuController::class, 'destroy'])->name('menu.destroy');
+            // MENU OWNER
+            Route::get   ('/menu',               [OwnerMenuController::class, 'index'])->name('menu.index');
+            Route::get   ('/menu/{produk}/edit', [OwnerMenuController::class, 'edit'])->name('menu.edit');
+            Route::put   ('/menu/{produk}',      [OwnerMenuController::class, 'update'])->name('menu.update');
+            Route::delete('/menu/{produk}',      [OwnerMenuController::class, 'destroy'])->name('menu.destroy');
 
+            // INBOX OWNER (ulasan)
             Route::get('/inbox', [OwnerInboxController::class, 'index'])->name('inbox.index');
         });
     });
+
 
 
 /*

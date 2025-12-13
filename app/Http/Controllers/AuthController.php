@@ -65,13 +65,17 @@ class AuthController extends Controller
         ]);
     }
 
-    public function logout(Request $request)
-    {
-        Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        return redirect()->route('login');
-    }
+   public function logout(Request $request)
+{
+    Auth::guard('web')->logout(); // atau Auth::logout();
+
+    // $request->session()->invalidate();
+
+    $request->session()->regenerateToken();
+
+    return redirect()->route('home');
+}
+
 
     /* ================= REGISTER ================= */
     // GET: tampilkan form + generate captcha

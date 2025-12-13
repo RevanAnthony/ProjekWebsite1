@@ -1,4 +1,4 @@
-{{-- resources/views/pages/pages/order-status.blade.php --}}
+{{-- resources/views/pages/order-status.blade.php --}}
 @extends('layouts.app')
 @section('title','Status Pesanan')
 
@@ -156,8 +156,28 @@
   }
 
   /* map */
-  .map{height:180px;border-radius:12px;overflow:hidden}
-  #map{height:100%;width:100%;background:#ddd}
+  .map{
+      height:180px;
+      border-radius:12px;
+      overflow:hidden;
+      position:relative;
+  }
+  #map{
+      height:100%;
+      width:100%;
+      background:#ddd;
+      pointer-events:none; /* biar nggak ganggu scroll */
+  }
+  .leaflet-container{
+      background:#ddd;
+  }
+  /* turunin z-index leaflet supaya header tetap di atas */
+  .leaflet-pane,
+  .leaflet-top,
+  .leaflet-bottom{
+      z-index:0 !important;
+  }
+
   .map-meta{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
   .badge-green{font-size:11px;background:#e8fff1;border-radius:999px;padding:4px 10px;font-weight:700;color:#0a8a3c}
 
@@ -174,15 +194,30 @@
   .sum-total{border-top:1px dashed #eee;margin-top:6px;padding-top:10px;font-weight:900}
 
   /* review card */
-  .rv-form{margin-top:4px}
-  .rv-form-row{display:flex;flex-direction:column;font-size:13px;margin-bottom:8px}
+  .rv-form{margin-top:8px}
+  .rv-form-row{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;   
+    font-size:14px;
+    margin-bottom:10px;
+}
+
+  .rv-form-row label{
+      font-weight:600;
+      margin-bottom:4px;
+  }
+  .rv-form-row--rating{
+      margin-bottom:12px;
+  }
   .rv-input{
       border-radius:10px;
       border:1px solid #e5e5e5;
-      padding:8px 10px;
-      font-size:13px;
+      padding:10px 12px;
+      font-size:14px;
       font-family:inherit;
       resize:vertical;
+      min-height:70px;
   }
   .rv-input:focus{
       outline:none;
@@ -195,22 +230,24 @@
       border-radius:999px;
       background:#ff5043;
       color:#fff;
-      font-size:13px;
+      font-size:14px;
       font-weight:700;
-      padding:8px 16px;
+      padding:9px 18px;
       cursor:pointer;
+      align-self:flex-start;
   }
   .rv-btn:hover{filter:brightness(1.05);}
 
   /* rating bintang */
   .rv-stars{
-      display:flex;
-      flex-direction:row-reverse;
-      gap:4px;
-      font-size:24px;
-      cursor:pointer;
-      margin-top:4px;
-  }
+    display:inline-flex;         
+    flex-direction:row-reverse;   
+    gap:6px;
+    font-size:30px;
+    cursor:pointer;
+    margin-top:4px;
+}
+
   .rv-stars input{
       display:none;
   }
@@ -226,6 +263,11 @@
   }
   .rv-stars input:checked ~ label{
       color:#f59e0b;
+  }
+  .rv-hint{
+      font-size:12px;
+      color:#888;
+      margin-top:4px;
   }
 </style>
 
@@ -379,23 +421,26 @@
   {{-- Ulasan Pesanan --}}
   @if($canReview)
       <div class="os-card">
-        <div style="font-weight:900;margin-bottom:6px">
+        <div style="font-weight:900;margin-bottom:4px;">
             {{ $review ? 'Ulasan kamu' : 'Berikan ulasan untuk pesanan ini' }}
+        </div>
+        <div style="font-size:12px;color:#777;margin-bottom:8px;">
+            Ceritakan pengalamanmu supaya pelanggan lain dan tim Golden Spice dapat insight yang jelas.
         </div>
 
         @if($review)
-            <div style="font-size:13px;margin-bottom:8px;">
+            <div style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                 <strong>Rating sekarang:</strong>
                 @for($i = 1; $i <= 5; $i++)
                     <span style="color:{{ $i <= ($review->rating ?? 0) ? '#f59e0b' : '#e5e7eb' }}">★</span>
                 @endfor
-                <span style="font-size:12px;color:#777;margin-left:4px;">
+                <span style="font-size:13px;color:#777;">
                     {{ $review->rating }}/5
                 </span>
             </div>
 
             @if($review->komentar)
-                <div style="font-size:13px;color:#444;line-height:1.6;margin-bottom:8px;">
+                <div style="font-size:14px;color:#444;line-height:1.6;margin-bottom:10px;">
                     {{ $review->komentar }}
                 </div>
             @endif
@@ -407,8 +452,8 @@
             {{-- Form update ulasan --}}
             <form method="POST" action="{{ $reviewRoute }}" class="rv-form">
                 @csrf
-                <div class="rv-form-row">
-                    <label style="font-size:13px;font-weight:600;">Ubah rating</label>
+                <div class="rv-form-row rv-form-row--rating">
+                    <label>Ubah rating</label>
                     <div class="rv-stars">
                         @for($i = 5; $i >= 1; $i--)
                             <input
@@ -421,11 +466,12 @@
                             <label for="rating-edit-{{ $i }}">★</label>
                         @endfor
                     </div>
+                    <div class="rv-hint">Sentuh bintang untuk memilih rating 1–5.</div>
                 </div>
 
                 <div class="rv-form-row">
-                    <label for="komentar" style="font-size:13px;font-weight:600;">Komentar (opsional)</label>
-                    <textarea id="komentar" name="komentar" rows="3" class="rv-input" placeholder="Ceritakan pengalamanmu dengan pesanan ini">{{ old('komentar', $review->komentar ?? '') }}</textarea>
+                    <label for="komentar">Komentar (opsional)</label>
+                    <textarea id="komentar" name="komentar" rows="3" class="rv-input" placeholder="Misalnya: rasa, porsi, kecepatan pengantaran, keramahan driver, dsb.">{{ old('komentar', $review->komentar ?? '') }}</textarea>
                 </div>
 
                 <button type="submit" class="rv-btn">
@@ -442,8 +488,8 @@
             <form method="POST" action="{{ $reviewRoute }}" class="rv-form">
                 @csrf
 
-                <div class="rv-form-row">
-                    <label style="font-size:13px;font-weight:600;">Rating</label>
+                <div class="rv-form-row rv-form-row--rating">
+                    <label>Rating</label>
                     <div class="rv-stars">
                         @for($i = 5; $i >= 1; $i--)
                             <input
@@ -456,11 +502,12 @@
                             <label for="rating-new-{{ $i }}">★</label>
                         @endfor
                     </div>
+                    <div class="rv-hint">Sentuh bintang untuk memberi rating 1 (buruk) sampai 5 (sangat puas).</div>
                 </div>
 
                 <div class="rv-form-row">
-                    <label for="komentar" style="font-size:13px;font-weight:600;">Komentar (opsional)</label>
-                    <textarea id="komentar" name="komentar" rows="3" class="rv-input" placeholder="Ceritakan pengalamanmu dengan pesanan ini">{{ old('komentar') }}</textarea>
+                    <label for="komentar">Komentar (opsional)</label>
+                    <textarea id="komentar" name="komentar" rows="3" class="rv-input" placeholder="Tulis apa yang kamu suka atau yang perlu diperbaiki dari pesanan ini.">{{ old('komentar') }}</textarea>
                 </div>
 
                 <button type="submit" class="rv-btn">

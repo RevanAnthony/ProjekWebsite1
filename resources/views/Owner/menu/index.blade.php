@@ -1,3 +1,4 @@
+{{-- resources/views/owner/menu/index.blade.php --}}
 @extends('owner.layout')
 
 @section('title','Manajemen Menu — Owner')
@@ -51,7 +52,7 @@
         font-size:14px;
     }
 
-    /* KATEGORI + EDIT MODE DI KANAN (SESUI FIGMA) */
+    /* KATEGORI + EDIT MODE DI KANAN */
     .om-toolbar{
         display:flex;
         justify-content:space-between;
@@ -107,7 +108,7 @@
         gap:10px;
         font-size:13px;
         white-space:nowrap;
-        margin-top:26px; /* sejajarkan secara visual dengan row kategori */
+        margin-top:26px;
     }
     .om-toggle{
         position:relative;
@@ -144,13 +145,29 @@
         margin-top:10px;
         margin-bottom:6px;
         font-size:12px;
-        color:#999;
+        color:#888;
         display:grid;
-        grid-template-columns:40px 80px minmax(0,1.6fr) 110px minmax(0,2fr) 90px 70px;
-        padding:0 6px;
+        grid-template-columns:60px 90px minmax(0,1.7fr) 120px minmax(0,2fr) 140px 80px;
+        padding:8px 18px;
+        text-transform:uppercase;
+        letter-spacing:.04em;
+        font-weight:700;
+    }
+    .om-table-head > div{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+    }
+    .om-table-head > div:nth-child(3),
+    .om-table-head > div:nth-child(4),
+    .om-table-head > div:nth-child(5){
+        justify-content:flex-start;
+    }
+    .om-table-head > div:nth-child(7){
+        justify-content:flex-end;
     }
 
-    /* SECTION HEADER KATEGORI (Ricebowl (5)) */
+    /* SECTION HEADER KATEGORI */
     .om-section-row{
         display:flex;
         align-items:center;
@@ -185,9 +202,9 @@
     }
     .om-row{
         display:grid;
-        grid-template-columns:40px 80px minmax(0,1.6fr) 110px minmax(0,2fr) 90px 70px;
+        grid-template-columns:60px 90px minmax(0,1.7fr) 120px minmax(0,2fr) 140px 80px;
         gap:10px;
-        padding:12px 16px;
+        padding:12px 18px;
         margin-bottom:10px;
         background:#fff;
         border-radius:22px;
@@ -197,7 +214,14 @@
     }
 
     .om-no{
-        color:#999;
+        color:#666;
+        font-size:13px;
+        text-align:center;
+    }
+
+    .om-img-cell{
+        display:flex;
+        justify-content:center;
     }
     .om-img{
         width:72px;
@@ -211,24 +235,44 @@
         height:100%;
         object-fit:cover;
     }
+
+    .om-main{
+        display:flex;
+        flex-direction:column;
+        gap:2px;
+    }
     .om-name{
         font-weight:600;
-        margin-bottom:2px;
     }
     .om-cat{
         font-size:12px;
         color:#999;
     }
+
     .om-price{
         font-weight:700;
     }
+
     .om-desc{
         font-size:13px;
         color:#555;
     }
+
     .om-code{
+        display:flex;
+        flex-direction:column;
+        align-items:flex-end;
+        text-align:right;
+        gap:2px;
+    }
+    .om-code-main{
         font-size:13px;
-        color:#666;
+        font-weight:700;
+        color:#222;
+    }
+    .om-code-id{
+        font-size:11px;
+        color:#999;
     }
 
     /* AKSI EDIT / TRASH DI KANAN */
@@ -263,7 +307,7 @@
         color:#777;
     }
 
-    /* ====== EDIT MODE EFFECT ====== */
+    /* EDIT MODE EFFECT */
     .om-page:not(.is-edit-mode) .om-actions{
         display:none;
     }
@@ -277,8 +321,10 @@
 @section('content')
 
 @php
-    /** @var \Illuminate\Support\Collection|\App\Models\Produk[] $produk */
-    /** @var \Illuminate\Support\Collection|\App\Models\KategoriProduk[] $kategori */
+    /**
+     * @var \Illuminate\Support\Collection|\App\Models\Produk[] $produk
+     * @var \Illuminate\Support\Collection|\App\Models\KategoriProduk[] $kategori
+     */
 
     $catParam   = request('cat');
     $currentCat = null;
@@ -289,6 +335,38 @@
                 || (string)$k->id_kategori === (string)$catParam;
         });
     }
+
+    /**
+     * Helper kode produk:
+     * - Kalau di DB sudah ada $item->kode_produk, pakai itu.
+     * - Kalau belum, generate dari kategori:
+     *   Ricebowl   -> RB
+     *   Side Dish  -> SD
+     *   Drink/Minum-> D
+     *   lainnya    -> P
+     *   + 2 digit dari id_produk.
+     */
+    $buildCode = function ($item) {
+        if (!empty($item->kode_produk)) {
+            return strtoupper($item->kode_produk);
+        }
+
+        $prefix  = 'P';
+        $katName = strtolower(trim($item->kategori->nama_kategori ?? ''));
+
+        if (strpos($katName, 'rice') !== false) {
+            $prefix = 'RB';
+        } elseif (strpos($katName, 'side') !== false) {
+            $prefix = 'SD';
+        } elseif (strpos($katName, 'drink') !== false || strpos($katName, 'minum') !== false) {
+            $prefix = 'D';
+        }
+
+        $number = (string) ($item->id_produk ?? 0);
+        $number = str_pad($number, 2, '0', STR_PAD_LEFT);
+
+        return $prefix . $number;
+    };
 @endphp
 
 <div class="om-page" id="ownerMenuPage">
@@ -325,8 +403,14 @@
 
                 {{-- Tab per kategori --}}
                 @foreach($kategori as $kat)
+                    @php
+                        $isActive = $catParam && (
+                            (string)$kat->slug === (string)$catParam ||
+                            (string)$kat->id_kategori === (string)$catParam
+                        );
+                    @endphp
                     <a href="{{ route('owner.menu.index', ['cat' => $kat->slug, 'q' => request('q')]) }}"
-                       class="om-kat-tab {{ $catParam && ($kat->slug == $catParam || $kat->id_kategori == $catParam) ? 'is-active' : '' }}">
+                       class="om-kat-tab {{ $isActive ? 'is-active' : '' }}">
                         <span class="icon">ramen_dining</span>
                         <span>{{ $kat->nama_kategori }}</span>
                     </a>
@@ -352,11 +436,11 @@
         <div>Nama Produk</div>
         <div>Harga</div>
         <div>Deskripsi</div>
-        <div>Id Produk</div>
+        <div>Kode Produk</div>
         <div></div> {{-- kolom aksi --}}
     </div>
 
-    {{-- SECTION HEADER KATEGORI (Ricebowl (5)) --}}
+    {{-- SECTION HEADER KATEGORI --}}
     <div class="om-section-row">
         <div class="om-section-left">
             <span class="icon">restaurant</span>
@@ -379,16 +463,18 @@
                 <div class="om-no">{{ $i + 1 }}</div>
 
                 {{-- Gambar --}}
-                <div class="om-img">
-                    @if($item->url_gambar)
-                        <img src="{{ asset($item->url_gambar) }}" alt="{{ $item->nama_produk }}">
-                    @else
-                        <img src="{{ asset('images/menu-placeholder.png') }}" alt="">
-                    @endif
+                <div class="om-img-cell">
+                    <div class="om-img">
+                        @if($item->url_gambar)
+                            <img src="{{ asset($item->url_gambar) }}" alt="{{ $item->nama_produk }}">
+                        @else
+                            <img src="{{ asset('images/menu-placeholder.png') }}" alt="">
+                        @endif
+                    </div>
                 </div>
 
                 {{-- Nama + kategori --}}
-                <div>
+                <div class="om-main">
                     <div class="om-name">{{ $item->nama_produk }}</div>
                     <div class="om-cat">
                         {{ $item->kategori->nama_kategori ?? '-' }}
@@ -405,9 +491,14 @@
                     {{ $item->deskripsi }}
                 </div>
 
-                {{-- Id Produk --}}
+                {{-- Kode Produk (RB01 / SD01 / D01 / dst) + ID --}}
                 <div class="om-code">
-                    #{{ $item->id_produk }}
+                    <span class="om-code-main">
+                        {{ $buildCode($item) }}
+                    </span>
+                    <span class="om-code-id">
+                        ID: {{ $item->id_produk }}
+                    </span>
                 </div>
 
                 {{-- Aksi kanan (edit + delete) --}}

@@ -40,25 +40,21 @@ class Kernel extends HttpKernel
         ],
     ];
 
-    /**
-     * Alias middleware untuk dipakai di route.
-     */
-    protected $middlewareAliases = [
-        'auth'             => \App\Http\Middleware\Authenticate::class,
-        'auth.basic'       => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
-        'auth.session'     => \Illuminate\Session\Middleware\AuthenticateSession::class,
-        'cache.headers'    => \Illuminate\Http\Middleware\SetCacheHeaders::class,
-        'can'              => \Illuminate\Auth\Middleware\Authorize::class,
-        'guest'            => \App\Http\Middleware\RedirectIfAuthenticated::class,
-        'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
-        'signed'           => \Illuminate\Routing\Middleware\ValidateSignature::class,
-        'throttle'         => \Illuminate\Routing\Middleware\ThrottleRequests::class,
-        'verified'         => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+    // di dalam class Kernel
+protected $middlewareAliases = [
+    'auth'             => \App\Http\Middleware\Authenticate::class,
+    'auth.basic'       => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+    'auth.session'     => \Illuminate\Session\Middleware\AuthenticateSession::class,
+    'cache.headers'    => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+    'can'              => \Illuminate\Auth\Middleware\Authorize::class,
+    'guest'            => \App\Http\Middleware\RedirectIfAuthenticated::class,
+    'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
+    'signed'           => \Illuminate\Routing\Middleware\ValidateSignature::class,
+    'throttle'         => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+    'verified'         => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
-        // --- middleware custom kita ---
-        'owner'            => \App\Http\Middleware\OwnerOnly::class,
-        'admin' => \App\Http\Middleware\AdminOnly::class,
-
-
-    ];
+    // --- middleware custom ---
+    'owner'            => \App\Http\Middleware\OwnerOnly::class,
+    'admin'            => \App\Http\Middleware\AdminOnly::class,
+];
 }
