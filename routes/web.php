@@ -12,6 +12,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CouponController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ChatController;
+use App\Http\Controllers\NotificationController;
 
 use App\Http\Controllers\Owner\OwnerAuthController;
 use App\Http\Controllers\Owner\OwnerMenuController;
@@ -106,6 +107,11 @@ Route::middleware('auth:web')->group(function () {
     // CHAT PESANAN (user)
     Route::get('/orders/{id}/chat',  [ChatController::class, 'showOrderChat'])->name('orders.chat');
     Route::post('/orders/{id}/chat', [ChatController::class, 'sendOrderMessage'])->name('orders.chat.send');
+
+    // NOTIFICATIONS (user)
+    Route::get('/notifications/json', [NotificationController::class, 'json'])->name('notifications.json');
+    Route::post('/notifications/mark-read', [NotificationController::class, 'markRead'])->name('notifications.markRead');
+
 });
 
 // ===================== ADMIN / KASIR PANEL =====================
@@ -155,6 +161,8 @@ Route::prefix('gs-owner-panel-x01')
 
             Route::get('/',          [OwnerDashboardController::class, 'index'])->name('dashboard');
             Route::get('/dashboard', [OwnerDashboardController::class, 'index'])->name('dashboard.alt');
+            Route::get('/menu-sales/{produk}', [OwnerDashboardController::class, 'menuSales'])->name('menu.sales');
+
 
             // MENU OWNER
             Route::get   ('/menu',               [OwnerMenuController::class, 'index'])->name('menu.index');

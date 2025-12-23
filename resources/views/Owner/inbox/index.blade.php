@@ -99,20 +99,22 @@
         margin-bottom:8px;
     }
 
-    /* bar chart */
+    /* ===== BAR CHART (FIX + ANGKA DI ATAS) ===== */
     .oi-bar-chart{
         display:flex;
         align-items:flex-end;
         gap:10px;
         height:180px;
-        padding-top:8px;
+        padding-top:26px;     /* ruang untuk angka atas */
+        padding-bottom:22px;  /* ruang untuk label bawah */
     }
     .oi-bar{
         flex:1;
+        height:100%;
         border-radius:6px 6px 0 0;
         background:#e5e7eb;
         position:relative;
-        overflow:hidden;
+        overflow:visible;
     }
     .oi-bar-fill{
         position:absolute;
@@ -122,17 +124,29 @@
         border-radius:6px 6px 0 0;
         background:#3b82f6;
     }
+    .oi-bar-value{
+        position:absolute;
+        top:-22px;            /* tampil di bagian atas */
+        left:50%;
+        transform:translateX(-50%);
+        font-size:12px;
+        font-weight:700;
+        color:#111827;
+        white-space:nowrap;
+        pointer-events:none;
+    }
     .oi-bar-label{
         position:absolute;
-        bottom:-18px;
+        bottom:-20px;
         left:50%;
         transform:translateX(-50%);
         font-size:11px;
         color:#666;
         white-space:nowrap;
+        pointer-events:none;
     }
 
-    /* pie */
+    /* ===== PIE ===== */
     .oi-pie-placeholder{
         height:180px;
         display:flex;
@@ -266,7 +280,7 @@
         grid-template-columns:48px minmax(0,1fr) 40px;
         gap:10px;
         padding:10px 0;
-        border-bottom:1px solid #f1f59;
+        border-bottom:1px solid #f1f5f9;
         font-size:13px;
     }
     .oi-review:last-child{
@@ -379,7 +393,7 @@
 
     $posDeg = $totalSent ? ($positive / $totalSent) * 360 : 0;
     $neuDeg = $totalSent ? ($neutral  / $totalSent) * 360 : 0;
-    $negDeg = 360 - $posDeg - $neuDeg; // sisanya buat jaga rounding
+    $negDeg = 360 - $posDeg - $neuDeg;
 @endphp
 
 <div class="oi-page">
@@ -433,9 +447,12 @@
                 @foreach([5,4,3,2,1] as $star)
                     @php
                         $value  = $ratingBuckets[$star];
-                        $height = max(8, ($value / $maxBucket) * 100);
+                        $height = $maxBucket ? (($value / $maxBucket) * 100) : 0;
+                        $height = $value > 0 ? max(6, $height) : 0; // kalau 0 biar benar-benar kosong
                     @endphp
+
                     <div class="oi-bar">
+                        <div class="oi-bar-value">{{ $value }}</div>
                         <div class="oi-bar-fill" style="height: {{ $height }}%;"></div>
                         <div class="oi-bar-label">{{ $star }} Stars</div>
                     </div>

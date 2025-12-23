@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Produk;
 use App\Models\KategoriProduk;
 use App\Models\Pesanan;
@@ -39,11 +40,53 @@ class PageController extends Controller
     // ====== Halaman Menu (ambil dari DB) ======
     public function menu()
     {
-        // Ambil semua produk dari database
-        $produk = Produk::orderBy('id_produk')->get();
+        // NOTE:
+        // - order_count = COUNT(DISTINCT id_pesanan) per produk (sesuai request user)
+        // - rating_avg  = AVG(ulasan.rating) yang terhubung ke pesanan yg memuat produk tsb
 
-        // Kirim ke view pages/menu.blade.php
-        return view('pages.menu', compact('produk'));
+        $salesSub = DB::table('detail_pesanan as dp')
+            ->join('pesanan as ps', 'ps.id_pesanan', '=', 'dp.id_pesanan')
+            ->select('dp.id_produk', DB::raw('COUNT(DISTINCT dp.id_pesanan) as order_count'))
+            ->where(function ($q) {
+                $q->whereNull('ps.status_pesanan')
+                  ->orWhere('ps.status_pesanan', '!=', 'dibatalkan');
+            })
+            ->groupBy('dp.id_produk');
+
+        $ratingSub = DB::table('detail_pesanan as dp')
+            ->join('pesanan as ps', 'ps.id_pesanan', '=', 'dp.id_pesanan')
+            ->join('ulasan as u', 'u.id_pesanan', '=', 'ps.id_pesanan')
+            ->select('dp.id_produk', DB::raw('AVG(u.rating) as rating_avg'))
+            ->where(function ($q) {
+                $q->whereNull('ps.status_pesanan')
+                  ->orWhere('ps.status_pesanan', '!=', 'dibatalkan');
+            })
+            ->groupBy('dp.id_produk');
+
+        $produk = Produk::query()
+            ->leftJoinSub($salesSub, 'sales', function ($join) {
+                $join->on('sales.id_produk', '=', 'produk.id_produk');
+            })
+            ->leftJoinSub($ratingSub, 'ratings', function ($join) {
+                $join->on('ratings.id_produk', '=', 'produk.id_produk');
+            })
+            ->select(
+                'produk.*',
+                DB::raw('COALESCE(sales.order_count, 0) as order_count'),
+                DB::raw('ratings.rating_avg as rating_avg')
+            )
+            ->orderBy('produk.id_produk')
+            ->get();
+
+        // Rank Top 3 (untuk ribbon TERLARIS KE-x)
+        $topRanks = $produk
+            ->sortByDesc(fn ($p) => (int) ($p->order_count ?? 0))
+            ->take(3)
+            ->values()
+            ->mapWithKeys(fn ($p, $i) => [(int) $p->id_produk => $i + 1])
+            ->all();
+
+        return view('pages.menu', compact('produk', 'topRanks'));
     }
 
     /**

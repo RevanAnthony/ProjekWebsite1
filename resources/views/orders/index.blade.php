@@ -1,4 +1,4 @@
-{{-- resources/views/orders/index.blade.php --}}
+  {{-- resources/views/orders/index.blade.php --}}
 @extends('layouts.app')
 
 @section('title', 'Order — Golden Spice')
@@ -83,7 +83,23 @@
     background:#f5f5f5;
     color:#444;
   }
-  .order-actions{
+  
+  .order-status-pill--info{
+    background:#e3f2fd;
+    color:#0d47a1;
+    border:1px solid #bbdefb;
+  }
+  .order-status-pill--success{
+    background:#e9f9ee;
+    color:#137a34;
+    border:1px solid #b7edc9;
+  }
+  .order-status-pill--danger{
+    background:#ffebee;
+    color:#b71c1c;
+    border:1px solid #ffcdd2;
+  }
+.order-actions{
     display:flex;
     flex-direction:column;
     align-items:flex-end;
@@ -155,10 +171,17 @@
     @else
       @foreach ($activeOrders as $order)
         @php
-          $orderId   = $order->id_pesanan ?? $order->getKey();
+$orderId   = $order->id_pesanan ?? $order->getKey();
           $statusRaw = $order->status_pesanan ?? '';
           $statusLbl = ucwords(str_replace('_', ' ', $statusRaw));
-          $pembayaran = strtoupper($order->metode_pembayaran ?? '-');
+                    $statusKey = strtolower((string)$statusRaw);
+          $pillClass = 'order-status-pill--info';
+          if(str_contains($statusKey,'selesai') || str_contains($statusKey,'completed') || str_contains($statusKey,'done')){
+            $pillClass = 'order-status-pill--success';
+          }elseif(str_contains($statusKey,'dibatalkan') || str_contains($statusKey,'batal') || str_contains($statusKey,'cancel')){
+            $pillClass = 'order-status-pill--danger';
+          }
+$pembayaran = strtoupper($order->metode_pembayaran ?? '-');
         @endphp
         <div class="order-card">
           <div class="order-left">
@@ -168,14 +191,15 @@
             </div>
             <div class="order-meta">
               Metode Pembayaran:
-              <strong>{{ $pembayaran }}</strong>
               @if ($order->metode_pembayaran === 'qris')
                 <span class="order-badge order-badge--qris">QRIS</span>
               @elseif ($order->metode_pembayaran === 'cod')
                 <span class="order-badge order-badge--cod">COD</span>
+              @else
+                <strong>{{ $pembayaran }}</strong>
               @endif
             </div>
-            <span class="order-status-pill">
+            <span class="order-status-pill {{ $pillClass }}">
               {{ $statusLbl }}
             </span>
           </div>
@@ -210,9 +234,15 @@
     @else
       @foreach ($historyOrders as $order)
         @php
-          $orderId   = $order->id_pesanan ?? $order->getKey();
+$orderId   = $order->id_pesanan ?? $order->getKey();
           $statusRaw = $order->status_pesanan ?? '';
-          $statusLbl = ucwords(str_replace('_', ' ', $statusRaw));
+          $statusLbl = ucwords(str_replace('_', ' ', $statusRaw));          $statusKey = strtolower((string)$statusRaw);
+          $pillClass = 'order-status-pill--info';
+          if(str_contains($statusKey,'selesai') || str_contains($statusKey,'completed') || str_contains($statusKey,'done')){
+            $pillClass = 'order-status-pill--success';
+          }elseif(str_contains($statusKey,'dibatalkan') || str_contains($statusKey,'batal') || str_contains($statusKey,'cancel')){
+            $pillClass = 'order-status-pill--danger';
+          }
         @endphp
         <div class="order-card">
           <div class="order-left">
@@ -221,7 +251,7 @@
               {{ \Carbon\Carbon::parse($order->tanggal_pesanan)->format('d M Y · H:i') }}
             </div>
             <div class="order-meta">
-              Status: <strong>{{ $statusLbl }}</strong>
+              Status: <span class="order-status-pill {{ $pillClass }}">{{ $statusLbl }}</span>
             </div>
           </div>
           <div class="order-actions">

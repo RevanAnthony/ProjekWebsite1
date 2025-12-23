@@ -269,6 +269,18 @@
       color:#888;
       margin-top:4px;
   }
+
+  /* review alerts */
+  .rv-alert{
+      width:100%;
+      border-radius:12px;
+      padding:10px 12px;
+      font-size:12px;
+      line-height:1.5;
+      margin:10px 0 10px;
+  }
+  .rv-alert--success{background:#e8fff1;border:1px solid #b7f0cf;color:#0a8a3c;font-weight:700}
+  .rv-alert--error{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;font-weight:700}
 </style>
 
 <div class="os-wrap">
@@ -428,6 +440,23 @@
             Ceritakan pengalamanmu supaya pelanggan lain dan tim Golden Spice dapat insight yang jelas.
         </div>
 
+      {{-- Flash message (setelah simpan ulasan) / validasi --}}
+      @if (session('success'))
+          <div class="rv-alert rv-alert--success" data-review-success>
+              {{ session('success') }}
+          </div>
+      @endif
+      @if (session('error'))
+          <div class="rv-alert rv-alert--error">
+              {{ session('error') }}
+          </div>
+      @endif
+      @if ($errors->any())
+          <div class="rv-alert rv-alert--error">
+              {{ $errors->first() }}
+          </div>
+      @endif
+
         @if($review)
             <div style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
                 <strong>Rating sekarang:</strong>
@@ -450,7 +479,7 @@
             </div>
 
             {{-- Form update ulasan --}}
-            <form method="POST" action="{{ $reviewRoute }}" class="rv-form">
+            <form method="POST" action="{{ $reviewRoute }}" class="rv-form js-review-form">
                 @csrf
                 <div class="rv-form-row rv-form-row--rating">
                     <label>Ubah rating</label>
@@ -474,18 +503,12 @@
                     <textarea id="komentar" name="komentar" rows="3" class="rv-input" placeholder="Misalnya: rasa, porsi, kecepatan pengantaran, keramahan driver, dsb.">{{ old('komentar', $review->komentar ?? '') }}</textarea>
                 </div>
 
-                <button type="submit" class="rv-btn">
+                <button type="submit" class="rv-btn js-review-submit">
                     Simpan perubahan
                 </button>
             </form>
         @else
-            @if($errors->any())
-                <div style="background:#fef2f2;border:1px solid #fecaca;padding:8px 10px;border-radius:10px;font-size:12px;color:#b91c1c;margin-bottom:8px;">
-                    {{ $errors->first() }}
-                </div>
-            @endif
-
-            <form method="POST" action="{{ $reviewRoute }}" class="rv-form">
+            <form method="POST" action="{{ $reviewRoute }}" class="rv-form js-review-form">
                 @csrf
 
                 <div class="rv-form-row rv-form-row--rating">
@@ -510,7 +533,7 @@
                     <textarea id="komentar" name="komentar" rows="3" class="rv-input" placeholder="Tulis apa yang kamu suka atau yang perlu diperbaiki dari pesanan ini.">{{ old('komentar') }}</textarea>
                 </div>
 
-                <button type="submit" class="rv-btn">
+                <button type="submit" class="rv-btn js-review-submit">
                     Kirim Ulasan
                 </button>
             </form>
@@ -535,5 +558,47 @@
   }).addTo(m);
 
   L.marker([lat, lng]).addTo(m);
+
+  // Review UX: setelah klik submit, tombol hilang & tampil teks.
+  (() => {
+    const successBanner = document.querySelector('[data-review-success]');
+    const forms = document.querySelectorAll('.js-review-form');
+    if (!forms.length) return;
+
+    forms.forEach((form) => {
+      const btn = form.querySelector('.js-review-submit, button[type="submit"]');
+      if (!btn) return;
+
+      // kalau baru selesai simpan (redirect + flash success), sembunyikan tombol
+      if (successBanner) {
+        btn.style.display = 'none';
+      }
+
+      // tampilkan tombol lagi kalau user mengubah rating / komentar
+      const showBtnAgain = () => {
+        if (!successBanner) return;
+        btn.style.display = 'inline-flex';
+        successBanner.style.display = 'none';
+      };
+      form.querySelectorAll('input[name="rating"], textarea[name="komentar"]').forEach((el) => {
+        el.addEventListener('change', showBtnAgain);
+        el.addEventListener('input', showBtnAgain);
+      });
+
+      // saat submit: cegah double click, hilangkan tombol, kasih info
+      form.addEventListener('submit', () => {
+        btn.disabled = true;
+        btn.style.display = 'none';
+        let note = form.querySelector('.js-review-note');
+        if (!note) {
+          note = document.createElement('div');
+          note.className = 'rv-hint js-review-note';
+          note.style.marginTop = '10px';
+          form.appendChild(note);
+        }
+        note.textContent = 'Menyimpan perubahan...';
+      });
+    });
+  })();
 </script>
 @endsection
